@@ -222,7 +222,7 @@ class Train:
                 test_gen_in = torch.randn(train_sample_num, 512).to(self.device)
                 test_fake_signal = self.generator(test_gen_in, step=step, alpha=alpha)
 
-                path = os.path.join(os.path.join(self.result_path, 'train'), str(num))
+                path = os.path.join(os.path.join(self.result_path, 'train'), str(num) + '-' + str(self.resolution))
                 folder = os.path.exists(path)
                 if not folder:
                     os.makedirs(path)
@@ -235,7 +235,7 @@ class Train:
             self.discriminator.train(), self.generator.train()
 
             if num % 500000 == 0:
-                self.save_model(os.path.join(self.result_path, 'model'), step)
+                self.save_model(os.path.join(self.result_path, 'model'), num)
 
             if num % 1000 == 0:
                 params = {}
