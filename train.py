@@ -137,13 +137,14 @@ class Train:
                 else:
                     alpha = 0
 
-            self.resolution = 4 * 2 ** step
-            self.dataload(train_data=train_data, signal_size=self.resolution)
-            train_iter = iter(self.train_loader)
+                self.resolution = 4 * 2 ** step
+                self.dataload(train_data=train_data, signal_size=self.resolution)
+                train_iter = iter(self.train_loader)
 
             try:
                 real_signal = train_iter.next()
             except:
+                self.dataload(train_data=train_data, signal_size=self.resolution)
                 train_iter = iter(self.train_loader)
                 real_signal = train_iter.next()
 
