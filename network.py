@@ -454,7 +454,7 @@ class Generator(nn.Module):
 
 
 class StyledGenerator(nn.Module):
-    def __init__(self, code_dim=4096, n_mlp=8):
+    def __init__(self, code_dim=512, n_mlp=8):
         super().__init__()
 
         self.generator = Generator(code_dim)
@@ -570,7 +570,7 @@ class Discriminator(nn.Module):
                 out_std = torch.sqrt(out.var(0, unbiased=False) + 1e-8)
                 mean_std = out_std.mean()
                 mean_std = mean_std.expand(out.size(0), 1, 4)
-#                 print(out.shape, mean_std.shape)
+                # print(out.shape, mean_std.shape)
                 out = torch.cat([out, mean_std], 1)
 
             out = self.progression[index](out)
