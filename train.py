@@ -1,11 +1,9 @@
 import math
-
 import torch
 import torch.nn as nn
 import numpy as np
 import time
 import matplotlib
-from torch import tensor
 from torchvision import transforms
 from torch.autograd import grad
 
@@ -18,7 +16,8 @@ from network import *
 
 
 class Train:
-    def __init__(self, train_path='data/train', result_path='result', mixing=False, init_signal_size=8,
+    def __init__(self, train_path='data/train', result_path='result', from_signal_activate=True, mixing=False,
+                 init_signal_size=8,
                  max_signal_size=4096,
                  code_size=512,
                  num_epochs=500000, phase=30000,
@@ -27,6 +26,7 @@ class Train:
                  resume=False):
         self.train_path = train_path
         self.result_path = result_path
+        self.from_signal_activate = from_signal_activate
         self.mixing = mixing
         self.init_signal_size = init_signal_size
         self.max_signal_size = max_signal_size
@@ -53,16 +53,16 @@ class Train:
 
     def dataload(self, train_data, signal_size):
         train_transform = transforms.Compose([
-            # transforms.ToTensor(),
+            #             transforms.ToTensor(),
             transforms.Resize([1, signal_size]),
-            # transforms.Normalize(mean=[0.5], std=[0.5])
+            #             transforms.Normalize(mean=0.5, std=0.5)
         ])
         self.train_loader = DataLoader(GetDataset(train_data, transform=train_transform),
                                        batch_size=self.batch_size, shuffle=True)
 
     def build_model(self):
         self.generator = StyledGenerator(code_dim=self.code_size, n_mlp=8).to(self.device)
-        self.discriminator = Discriminator(fused=True, from_signal_activate=False).to(self.device)
+        self.discriminator = Discriminator(fused=True, from_signal_activate=self.from_signal_activate).to(self.device)
 
     def define_optim(self):
         self.g_optim = torch.optim.Adam(
@@ -103,6 +103,7 @@ class Train:
         start_num = 1
         step = int(math.log2(self.init_signal_size)) - 2
         max_step = int(math.log2(self.max_signal_size)) - 2
+        self.used_batch = 0
         self.resolution = 4 * 2 ** step
         final_progress = False
         train_data = self.get_train_data()
@@ -187,7 +188,6 @@ class Train:
             ).mean()
             grad_penalty = 10 * grad_penalty
             grad_penalty.backward()
-
             if num % 10 == 0:
                 grad_loss = grad_penalty.item()
                 d_loss = (-real_predict + fake_predict).item()
@@ -230,12 +230,12 @@ class Train:
                 plt.cla()
                 np.savetxt(os.path.join(path, str(num) + '-' + str(self.resolution) + '.txt'),
                            test_fake_signal[0][0].cpu().detach().numpy())
-                plt.plot(test_fake_signal[0][0])
+                plt.plot(test_fake_signal[0][0].cpu().detach().numpy())
                 plt.savefig(os.path.join(path, str(num) + '-' + str(self.resolution) + '.png'), dpi=600)
 
             self.discriminator.train(), self.generator.train()
 
-            if num % 500000 == 0:
+            if num % 50000 == 0:
                 self.save_model(os.path.join(self.result_path, 'model'), num)
 
             if num % 1000 == 0:
@@ -250,13 +250,14 @@ class Train:
 
 
 if __name__ == '__main__':
-    gan = Train(train_path='data/train', result_path='result', mixing=False, init_signal_size=8,
+    gan = Train(train_path='data/train', result_path='result', from_signal_activate=False, mixing=False,
+                init_signal_size=8,
                 max_signal_size=4096,
                 code_size=512,
                 num_epochs=1000000, phase=2000000,
                 batch_size=100, light=True,
                 input_nc=1, output_nc=1, lr=1e-4, weight_decay=1e-4, decay_flag=True, device='cuda:2',
-                resume=False)
+                resume=True)
     gan.build_model()
     gan.define_optim()
     gan.train()
